@@ -43,7 +43,6 @@
         <i class="fa fa-user" aria-hidden="true"></i>
         </span>
       </div>
-    
     <div class="wrap-input100 validate-input" data-validate = "Password is required">
       <input class="input100" type="password" name="password" placeholder="Password"/>
       <span class="focus-input100"></span>
@@ -66,9 +65,9 @@
     </form>
               <div class="sectionright"> </div>
           </div>
-          </header>
 		</div>
 	</div>
+
 	
 	
 
@@ -81,19 +80,13 @@
 <!--===============================================================================================-->
 	<script src="vendor/select2/select2.min.js"></script>
 <!--===============================================================================================-->
-	<script src="vendor/tilt/tilt.jquery.min.js"></script>
-	<script >
-		$('.js-tilt').tilt({
-			scale: 1.1
-		})
-	</script>
-<!--===============================================================================================-->
 	<script src="js/main.js"></script>
 
 </body>
 </html>
 
 <?php
+session_start();
 	if(isset($_POST['username']) && isset($_POST['password'])){
 		$user = $_POST['username'];
 		$pass = $_POST['password'];
@@ -116,8 +109,8 @@
 					$user = array("id"=> $results['id'],
 								"name"=> $results['username']
 								);
-					//TODO refactor
-					$sql = "select value from `System_Properties` where `key` = :key";
+
+					/*$sql = "select value from `System_Properties` where `key` = :key";
 					$stmt = $db->prepare($sql);
 					$r = $stmt->execute(array(":key"=>"admins"));
 					$result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -126,16 +119,17 @@
 					if($result){
 						if(strpos($result['value'], ($user["id"]."")) !== false){
 							$user["isAdmin"] = true;
-						}
+						} 
 					}
 					else{
 						echo $stmt->errorInfo();
-					}
+					}*/
 					
 					$_SESSION['user'] = $user;
 					echo var_export($user, true);
 					echo var_export($_SESSION, true);
-					header("Location: dashboard.php");
+					header("Location: dashboard.php?type=deposit");
+					exit();
 					
 				}
 				else{

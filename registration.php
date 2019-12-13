@@ -51,8 +51,14 @@ $(document).ready(function(){
 <body>
 	<div class="limiter">
 	  <div class="container-login100">
+	  	<div class="wrap-login100">
+	  	     <span class="login100-form-ebank">
+      E-Bank 5
+      </span>
+	  	<div class="sectionleft"> </div>
 		<form id="register_form" method="POST"/>
-		  <div><span class="login100-form-title"><strong class="text-white"> Registration </strong></span>
+	  
+		  <div><span class="login100-form-title"><strong> Registration </strong></span>
 		    
 		    <div class="wrap-input100" id="User"> 
 						<input type="text"
@@ -92,21 +98,25 @@ $(document).ready(function(){
   			  		/>
   			</div>
   			
-  			<div class="text-center p-t-136">
-						<a class="txt2 text-white" href="index.php">
-							Return to Login
-							<i class="fa fa-long-arrow-right m-l-5" aria-hidden="true"></i>
-						</a>
-					</div>
-					
-		</div>
+  			<div class="text-center p-t-136"> 
+		  <a class="text-center p-t-136" href="index.php"> <i class="fa fa-long-arrow-left m-l-5" aria-hidden="true"></i> Return to Login </div>		
+		  </a>  
+		  </div>
 		</form>
+		<div class="sectionright"> </div>
+	</div>
 	</div>
 </div>
 </body>
 </html>
 
+
 <?php
+
+    $chk = rand(10000000,99999999);
+    $sav = rand(10000000,99999999);
+    $btc = rand(10000000,99999999);
+
 	if(isset($_POST['username']) 
 		&& isset($_POST['password'])
 		&& isset($_POST['confirm'])){
@@ -118,6 +128,9 @@ $(document).ready(function(){
 				echo "Passwords don't match";
 				exit();
 		}
+		
+
+
 		//do further validation?
 		try{
 			//do hash of password
@@ -126,10 +139,13 @@ $(document).ready(function(){
 			//$username, $password, $host, $database
 			$conn_string = "mysql:host=$host;dbname=$database;charset=utf8mb4";
 			$db = new PDO($conn_string, $username, $password);
-			$stmt = $db->prepare("INSERT into `Users` (`username`, `password`) VALUES(:username, :password)");
+			$stmt = $db->prepare("INSERT into `Users` (`username`, `password`, `chk_act`, `sav_act`, `btc_act`) VALUES(:username, :password, :chk_act, :sav_act, :btc_act)");
 			$result = $stmt->execute(
 				array(":username"=>$user,
-					":password"=>$hash
+					":password"=>$hash,
+					":chk_act"=>$chk,
+					":sav_act"=>$sav,
+					":btc_act"=>$btc
 				)
 			);
 			print_r($stmt->errorInfo());

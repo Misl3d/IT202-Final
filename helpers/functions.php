@@ -24,4 +24,8 @@ function is_admin(){
 	}
 	return false;
 }
+
+function getChk(){
+	
+}
 ?>

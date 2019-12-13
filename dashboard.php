@@ -3,6 +3,90 @@ include_once("helpers/functions.php");
 include_once("partials/header.php");
 ?>
 
+<?php
+if(isset($_SESSION['user']['name'])){
+$user= $_SESSION['user']['name'];
+require("config.php");
+
+$conn = mysqli_connect($host, $username, $password, $database);
+if (!$conn) {
+    die("Connection failed: " . mysqli_connect_error());
+}
+
+$sql = "SELECT `chk_act`, `sav_act`, `btc_act` from Users where username='$user'";
+$result = mysqli_query($conn, $sql);
+$act = mysqli_fetch_assoc($result);
+	$sav_act = $act["sav_act"];
+	$chk_act = $act["chk_act"];
+	$btc_act = $act["btc_act"];
+
+$sql = "SELECT SUM(Amount) as Total FROM `transactions` WHERE AccountSource= '$chk_act'";
+$result = mysqli_query($conn, $sql);
+	$chk_bal = mysqli_fetch_assoc($result);
+	
+$sql = "SELECT SUM(Amount) as Total FROM `transactions` WHERE AccountSource= '$sav_act'";
+$result = mysqli_query($conn, $sql);
+	$sav_bal = mysqli_fetch_assoc($result);
+	
+$sql = "SELECT SUM(Amount) as Total FROM `transactions` WHERE AccountSource= '$btc_act'";
+$result = mysqli_query($conn, $sql);
+	$btc_bal = mysqli_fetch_assoc($result);
+	
+	foreach($chk_bal as $value){
+		$chk_bal_total = "$$value";
+	}
+	
+	foreach($btc_bal as $value){
+		$btc_bal_total = "$$value";
+	}
+	
+	foreach($sav_bal as $value){
+		$sav_bal_total = "$$value";
+	}
+
+
+
+}
+
+?>
+
+<?php
+ini_set('display_errors',1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+function do_bank_action($account1, $account2, $amountChange, $type){
+	require("config.php");
+	$conn_string = "mysql:host=$host;dbname=$database;charset=utf8mb4";
+	$db = new PDO($conn_string, $username, $password);
+	$a1total = 0;//TODO get total of account 1
+	$a2total = 0;//TODO get total of account 2
+	$query = "INSERT INTO `transactions` (`AccountSource`, `AccountDest`, `Amount`, `Type`, `Total`) 
+	VALUES(:p1a1, :p1a2, :p1change, :type, :a1total), 
+			(:p2a1, :p2a2, :p2change, :type, :a2total)";
+	
+	$stmt = $db->prepare($query);
+	$stmt->bindValue(":p1a1", $account1);
+	$stmt->bindValue(":p1a2", $account2);
+	$stmt->bindValue(":p1change", $amountChange);
+	$stmt->bindValue(":type", $type);
+	$stmt->bindValue(":a1total", $a1total);
+	//flip data for other half of transaction
+	$stmt->bindValue(":p2a1", $account2);
+	$stmt->bindValue(":p2a2", $account1);
+	$stmt->bindValue(":p2change", ($amountChange*-1));
+	$stmt->bindValue(":type", $type);
+	$stmt->bindValue(":a2total", $a2total);
+	$result = $stmt->execute();
+	return $result;
+	unset($_POST['amount']);
+	unset($_POST['type']);
+	unset($_POST['account1']);
+	unset($_POST['account2']);
+
+	header("Refresh:0");
+}
+?>
+
 <html lang="en">
 <head>
 	<title>Dashboard</title>
@@ -34,26 +118,32 @@ include_once("partials/header.php");
 <div>
 Today is 
 <?php
+date_default_timezone_set('US/Eastern');
 echo  date("l F jS, Y") .  "<br>";
 echo  date("g:i A") . "<br>";
 ?>
 </div>
 </div><br>
 
+
 <div class=dash-main> 
+		<div class="dash-navigation">
+			<ul>
+  				<a class="list" href="dashboard.php?type=withdraw">Withdraw</a> 
+  				<a class="list" href="dashboard.php?type=transfer">Transfer</a> 
+  				<a class="list" href="dashboard.php?type=deposit">Deposit</a>
+			</ul>
+		</div>
 	<div class="dash-chk">
 		<div class="dash-title">
 		Checking
 		</div>
 		<div class="dash-bal">
-			$00.00
+		<?php echo  $chk_bal_total ?>
 		</div>
-		<div class="dash-nav">
-			<ul>
-  				<li><a href="chkWithdraw.php">Withdraw</a></li> 
-  				<li><a href="chkTransfer.php">Transfer</a></li> 
-  				<li><a href="chkDeposit.php">Deposit</a></li> 
-			</ul>
+		<div class="dash-act-num">
+		#:
+		<?php echo  $chk_act ?>
 		</div>
 	</div>
 	</header>
@@ -62,14 +152,11 @@ echo  date("g:i A") . "<br>";
 			Savings
 		</div>
 		<div class="dash-bal">
-			$00.00
+		<?php echo  $sav_bal_total ?>
 		</div>
-		<div class="dash-nav">
-			<ul>
-  				<li><a href="savWithdraw.php">Withdraw</a></li> 
-  				<li><a href="savTransfer.php">Transfer</a></li> 
-  				<li><a href="savDeposit.php">Deposit</a></li> 
-			</ul>
+		<div class="dash-act-num">
+		#:
+		<?php echo  $sav_act ?>
 		</div>
 	</div>
 	
@@ -78,7 +165,7 @@ echo  date("g:i A") . "<br>";
 			Bitcoin
 		</div>
 		<div class="dash-bal-btc">
-			$00.00
+		<?php echo  $btc_bal_total ?>
 			<font size="3px">
 			<div align="center">
 			<?php 
@@ -90,25 +177,95 @@ echo  date("g:i A") . "<br>";
   			}
     		echo '1 BTC = $'. $btc; 
 			?>
+			
+			
 		</div>
 		</font>
 		</div>
-
-		<div class="dash-nav">
-			<ul>
-  				<li><a href="btcWithdraw.php">Withdraw</a></li> 
-  				<li><a href="btcTransfer.php">Transfer</a></li> 
-  				<li><a href="btcDeposit.php">Deposit</a></li> 
-			</ul>
+		<div class="dash-act-num">
+		#:
+		<?php echo  $btc_act ?>
 		</div>
 	</div>
+	<div class="dash-transactions">
+	<form method="POST">
+	<div class="dash-radio"> 
+	<div class="dash-radio-txt">
+	Account: 
+	<br>
+	<input type="radio" name="account1"
+	<?php if (isset($account1) && $account1=="checking") echo "checked";?>
+	value="<?php echo $chk_act;?>">Checking <br>
+	<input type="radio" name="account1"
+	<?php if (isset($account1) && $account1=="savings") echo "checked";?>
+	value="<?php echo $sav_act;?>">Savings <br>
+	<input type="radio" name="account1"
+	<?php if (isset($account1) && $account1=="bicoin") echo "checked";?>
+	value="<?php echo $btc_act;?>">Bitcoin
+	</div>
+	</div>
+	
+	<div class="dash-radio"> 
+	<div class="dash-radio-txt">
+	<?php if($_GET['type'] == 'transfer') : ?>
+	Recieving: <br>
+	<input type="radio" name="account2"
+	<?php if (isset($account2) && $account2=="checking") echo "checked";?>
+	value="<?php echo $chk_act;?>">Checking <br>
+	<input type="radio" name="account2"
+	<?php if (isset($account2) && $account2=="savings") echo "checked";?>
+	value="<?php echo $sav_act;?>">Savings <br>
+	<input type="radio" name="account2"
+	<?php if (isset($account2) && $account2=="bicoin") echo "checked";?>
+	value="<?php echo $btc_act;?>">Bitcoin
+	<?php elseif($_GET['type'] == '') : ?>
+	<?php endif; ?>
+
+	
+	<input type="number" name="amount" placeholder="$000.00"/>
+	<input type="hidden" name="type" value="<?php echo $_GET['type'];?>"/>
+	</div>
+	</div>
+	<div class="dash-radio"> 
+	<div class="dash-radio-txt">
+	<div class="move-money">
+      <button type ="submit" value="Login" class="login100-form-btn">
+       Move Money
+        </button>
+      </div>
+	</div>
+	</div>
+	</div>
+
+	
+
+</form>
+<?php
+if(isset($_POST['type']) && isset($_POST['account1']) && isset($_POST['amount'])){
+	$type = $_POST['type'];
+	$amount = (int)$_POST['amount'];
+	switch($type){
+		case 'deposit':
+			do_bank_action("00000000", $_POST['account1'], ($amount * -1), $type);
+			break;
+		case 'withdraw':
+			do_bank_action($_POST['account1'], "00000000", ($amount * -1), $type);
+			break;
+		case 'transfer':
+			do_bank_action($_POST['account1'], $_POST['account2'], ($amount * -1), $type);
+		break;
+	}
+}
+?>
+	</div>
 	<footer>
-	<div class="text-center p-t-136">
+	<div class="logout-center">
 	<div class=dash-logout>
 		<i class="fa fa-long-arrow-left m-l-5" aria-hidden="true"></i>
        <a class="dash-logout" href="logout.php">Log Out</a>
 	</div>
-   </div></footer>
+
+   </footer>
 </div>
 	
     
